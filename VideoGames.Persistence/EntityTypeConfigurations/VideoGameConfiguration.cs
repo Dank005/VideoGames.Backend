@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System;
 using VideoGames.Domain;
 
 namespace VideoGames.Persistence.EntityTypeConfigurations
@@ -9,12 +8,11 @@ namespace VideoGames.Persistence.EntityTypeConfigurations
     {
         public void Configure(EntityTypeBuilder<VideoGame_Genre> builder)
         {
-            builder.HasKey(vg => new { vg.VideoGameId, vg.GenreId });
-            builder.HasOne(vg => vg.VideoGame)
-                .WithMany(vg => vg.VideoGame_Genres).HasForeignKey(g => g.VideoGameId);
-
-            builder.HasOne(vg => vg.GameGenre).WithMany(vg => vg.VideoGame_Genres).HasForeignKey(g => g.GenreId);
-
+            builder.HasKey(vgg => new { vgg.VideoGameId, vgg.GameGenreId });
+            builder.HasOne(vgg => vgg.VideoGame)
+                .WithMany(vgg => vgg.VideoGame_Genres).HasForeignKey(vg => vg.VideoGameId);
+            builder.HasOne(vgg => vgg.GameGenre)
+                .WithMany(vgg => vgg.VideoGame_Genres).HasForeignKey(vg => vg.GameGenreId);
         }
     }
 }
