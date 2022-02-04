@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using VideoGames.Application.Interfaces;
 using VideoGames.Domain;
 
@@ -16,30 +16,35 @@ namespace VideoGames.Persistence.Repositories
             _context = context;
         }
 
-        public List<GameGenre> GetAll()
+        public async Task<List<GameGenre>> GetAllAsync()
         {
-            return _context.GameGenres.ToList();
+            var result = await _context.GameGenres.ToListAsync();
+            return result;
         }
 
-        public GameGenre GetById(Guid Id)
+        public async Task<GameGenre> GetByIdAsync(Guid Id)
         {
-            return _context.GameGenres.FirstOrDefault(x => x.Id == Id);
-        }
-        public GameGenre GetVideoGamesByGenreId(Guid id)
-        {
-            return _context.GameGenres.Include(x => x.VideoGame_Genres)
-                .ThenInclude(y => y.VideoGame).SingleOrDefault(m => m.Id == id);
+            var result = await _context.GameGenres.FirstOrDefaultAsync(x => x.Id == Id);
+            return result;
         }
 
-        public void Insert(GameGenre gameGenre)
+        public async Task<GameGenre> GetVideoGamesByGenreIdAsync(Guid id)
         {
-            _context.GameGenres.Add(gameGenre);
+            var result = await _context.GameGenres.Include(x => x.VideoGame_Genres)
+                .ThenInclude(y => y.VideoGame).SingleOrDefaultAsync(z => z.Id == id);
+            return result;
+        }
+
+        public async Task Insert(GameGenre gameGenre)
+        {
+            await _context.GameGenres.AddAsync(gameGenre);
         }
 
         public void Update(GameGenre gameGenre)
         {
             _context.GameGenres.Update(gameGenre);
         }
+
         public void Delete(GameGenre gameGenre)
         {
             _context.GameGenres.Remove(gameGenre);

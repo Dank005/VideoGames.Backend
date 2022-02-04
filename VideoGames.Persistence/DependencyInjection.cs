@@ -2,9 +2,8 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VideoGames.Application.Interfaces;
-using VideoGames.Persistence;
 
-namespace Notes.Persistence
+namespace VideoGames.Persistence
 {
     public static class DependencyInjection
     {
@@ -14,7 +13,7 @@ namespace Notes.Persistence
             var connectionString = configuration["DbConnection"];
             services.AddDbContext<VideoGamesDbContext>(options =>
             {
-                options.UseSqlServer(connectionString);
+                options.UseSqlite(connectionString);
             });
             services.AddScoped<IVideoGamesDbContext>(provider => provider.GetService<VideoGamesDbContext>());
 

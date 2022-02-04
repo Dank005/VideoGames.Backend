@@ -11,8 +11,8 @@ namespace VideoGames.Persistence.Migrations
                 name: "GameGenres",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -23,9 +23,9 @@ namespace VideoGames.Persistence.Migrations
                 name: "VideoGames",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DeveloperStudio = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Title = table.Column<string>(type: "TEXT", nullable: true),
+                    DeveloperStudio = table.Column<string>(type: "TEXT", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -36,8 +36,8 @@ namespace VideoGames.Persistence.Migrations
                 name: "VideoGame_Genre",
                 columns: table => new
                 {
-                    VideoGameId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    GameGenreId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    VideoGameId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    GameGenreId = table.Column<Guid>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

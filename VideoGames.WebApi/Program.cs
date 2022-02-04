@@ -13,19 +13,19 @@ namespace VideoGames.WebApi
         {
             var host = CreateHostBuilder(args).Build();
 
-            //using (var scope = host.Services.CreateScope())
-            //{
-            //    var serviceProvider = scope.ServiceProvider;
-            //    try
-            //    {
-            //        var context = serviceProvider.GetRequiredService<VideoGamesDbContext>();
-            //        DbInitializer.Initialize(context);
-            //    }
-            //    catch (Exception exception)
-            //    {
-
-            //    }
-            //}
+            using (var scope = host.Services.CreateScope())
+            {
+                var serviceProvider = scope.ServiceProvider;
+                try
+                {
+                    var context = serviceProvider.GetRequiredService<VideoGamesDbContext>();
+                    DbInitializer.Initialize(context);
+                }
+                catch (Exception)
+                {
+                    throw new Exception();
+                }
+            }
             host.Run();
         }
 

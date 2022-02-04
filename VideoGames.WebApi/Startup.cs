@@ -23,12 +23,13 @@ namespace VideoGames.WebApi
         }
 
         public void ConfigureServices(IServiceCollection services)
-        {            
+        {
+            services.AddPersistence(Configuration);
             services.AddControllersWithViews();
             services.AddRazorPages();
-            services.AddDbContext<VideoGamesDbContext>(options =>
-                options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
+            //services.AddDbContext<VideoGamesDbContext>(options =>
+            //    options.UseSqlite(
+            //        Configuration.GetConnectionString("DefaultConnection")));
             services.AddTransient<IUnitOfWork, UnitOfWorkRepo>();
             var config = new AutoMapper.MapperConfiguration(cfg =>
             {

@@ -8,7 +8,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using VideoGames.Application.Interfaces;
 using VideoGames.Domain;
-using VideoGames.Persistence;
 using VideoGames.WebApi.ViewModels.VideoGamesViewModel;
 
 namespace VideoGames.WebApi.Controllers
@@ -24,78 +23,56 @@ namespace VideoGames.WebApi.Controllers
             _mapper = mapper;
         }
 
-        public ActionResult Index()
+        // GET: VideoGameController/Index
+        public async Task<ActionResult> Index()
         {
-            var model = _unitOfWork.VideoGame.GetAll();
+            var model = await _unitOfWork.VideoGame.GetAllAsync();
             var vm = _mapper.Map<List<VideoGameViewModel>>(model);
             return View(vm);
         }
 
-        public ActionResult Details(Guid id)
+        // GET: VideoGameController/Details
+        public async Task<ActionResult> Details(Guid id)
         {
-            var genres = _unitOfWork.VideoGame.GetGenresByVideoGameId(id);
+            var genres = await _unitOfWork.VideoGame.GetGenresByVideoGameIdAsync(id);
             return View(genres);
-            //нужна viewModel
         }
 
-        public ActionResult Create()
+        // GET: VideoGameController/Create
+        public async Task<ActionResult> Create()
         {
-            var allGenres = _unitOfWork.GameGenre.GetAll();
-            var selectedList = new List<SelectListItem>();
-            foreach (var genre in allGenres)
-            {
-                selectedList.Add(new SelectListItem(genre.Title, genre.Id.ToString()));
-            }
-            var vm = new CreateVideoGameViewModel()
-            {
-                GameGenres = selectedList
-            };
-
+            var selectedList = await GetGenersListForSelect();
+            var vm = new CreateVideoGameViewModel() { GameGenres = selectedList };
             return View(vm);
         }
 
         // POST: VideoGameController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(CreateVideoGameViewModel vm)
+        public async Task<ActionResult> Create(CreateVideoGameViewModel vm)
         {
-            try
+            if (ModelState.IsValid)
             {
                 VideoGame videoGame = new VideoGame()
-                {
+                {                   
                     Title = vm.Title,
                     DeveloperStudio = vm.DeveloperStudio
                 };
-                foreach (var item in vm.SelectedGenres)
-                {
-                    videoGame.VideoGame_Genres.Add(new VideoGame_Genre()
-                    {
-                        GameGenreId = new Guid(item)
-                    });
-                }
-                _unitOfWork.VideoGame.Insert(videoGame);
-                _unitOfWork.Save();
+                if (vm.SelectedGenres != null)
+                    AddSelectedGenres(vm, videoGame);
 
+                await _unitOfWork.VideoGame.Insert(videoGame);
+                await _unitOfWork.SaveAsync();
                 return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            return View();
         }
 
         // GET: VideoGameController/Edit/5
-        public ActionResult Edit(Guid id)
+        public async Task<ActionResult> Edit(Guid id)
         {
-            var videoGame = _unitOfWork.VideoGame.GetById(id);
-            var gameGenres = _unitOfWork.GameGenre.GetAll();
-            var selectedGameGenres = videoGame.VideoGame_Genres.Select(x => new GameGenre()
-            {
-                Id = x.GameGenre.Id,
-                Title = x.GameGenre.Title
-            });
-            var selecedList = new List<SelectListItem>();
-            gameGenres.ForEach(i => selecedList.Add(new SelectListItem(i.Title, i.Id.ToString(), selectedGameGenres.Select(x => x.Id).Contains(i.Id))));
+            var videoGame = await _unitOfWork.VideoGame.GetGenresByVideoGameIdAsync(id);
+            var selecedList = await GetSelectedGenres(videoGame);
             var vm = new EditVideoGameViewModel()
             {
                 Id = videoGame.Id,
@@ -109,18 +86,103 @@ namespace VideoGames.WebApi.Controllers
         // POST: VideoGameController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(EditVideoGameViewModel vm)
+        public async Task<ActionResult> Edit(EditVideoGameViewModel vm)
         {
-            try
+            if (ModelState.IsValid)
             {
-                var videoGame = _unitOfWork.VideoGame.GetById(vm.Id);
+                var videoGame = await _unitOfWork.VideoGame.GetGenresByVideoGameIdAsync(vm.Id);
                 videoGame.Title = vm.Title;
                 videoGame.DeveloperStudio = vm.DeveloperStudio;
-                var selectedGameGenres = vm.SelectedGenres;
-                var existingGameGenres = videoGame.VideoGame_Genres.Select(x => x.GameGenreId.ToString()).ToList();
-                var toAdd = selectedGameGenres.Except(existingGameGenres).ToList();
-                var toRemove = existingGameGenres.Except(selectedGameGenres).ToList();
-                videoGame.VideoGame_Genres = videoGame.VideoGame_Genres.Where(x => !toRemove.Contains(x.GameGenreId.ToString())).ToList();
+                TransformSelectedGenres(vm, videoGame);
+
+                await _unitOfWork.SaveAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            return View();
+        }
+       
+        // GET: VideoGameController/Delete/5
+        public async Task<ActionResult> Delete(Guid id)
+        {
+            var videoGame = await _unitOfWork.VideoGame.GetByIdAsync(id);
+            var vm = _mapper.Map<VideoGameViewModel>(videoGame);
+            return View(vm);
+        }
+
+        // POST: VideoGameController/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> Delete(VideoGameViewModel vm)
+        {
+            var videoGame = _mapper.Map<VideoGame>(vm);
+            _unitOfWork.VideoGame.Delete(videoGame);
+            await _unitOfWork.SaveAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<List<SelectListItem>> GetGenersListForSelect()
+        {
+            var allGenres = await _unitOfWork.GameGenre.GetAllAsync();
+            var selectedList = new List<SelectListItem>();
+            foreach (var genre in allGenres)
+            {
+                selectedList.Add(new SelectListItem(genre.Title, genre.Id.ToString()));
+            }
+            return selectedList;
+        }
+
+        private static void AddSelectedGenres(CreateVideoGameViewModel vm, VideoGame videoGame)
+        {
+            foreach (var item in vm.SelectedGenres)
+            {
+                videoGame.VideoGame_Genres.Add(new VideoGame_Genre()
+                {
+                    GameGenreId = new Guid(item)
+                });
+            }
+        }
+
+        private async Task<List<SelectListItem>> GetSelectedGenres(VideoGame videoGame)
+        {
+            var selectedGameGenres = videoGame.VideoGame_Genres.Select(x => new GameGenre()
+            {
+                Id = x.GameGenre.Id,
+                Title = x.GameGenre.Title
+            });
+            var gameGenres = await _unitOfWork.GameGenre.GetAllAsync();
+            var selecedList = new List<SelectListItem>();
+            if (gameGenres.Count > 0)
+                gameGenres.ForEach(i => selecedList.Add(new SelectListItem(i.Title, i.Id.ToString(),
+                    selectedGameGenres.Select(x => x.Id).Contains(i.Id))));
+            return selecedList;
+        }
+
+        private static void TransformSelectedGenres(EditVideoGameViewModel vm, VideoGame videoGame)
+        {
+            var selectedGameGenres = vm.SelectedGenres;
+            var existingGameGenres = videoGame.VideoGame_Genres.Select(x => x.GameGenreId.ToString()).ToList();
+
+            //genres for add
+            var toAdd = new List<string>();
+            if (selectedGameGenres != null)
+                toAdd = selectedGameGenres.Except(existingGameGenres).ToList();
+
+            //gernres for remove
+            var toRemove = new List<string>();
+            if (existingGameGenres.Count != 0)
+            {
+                if (selectedGameGenres != null)
+                    toRemove = existingGameGenres.Except(selectedGameGenres).ToList();
+                else
+                    toRemove = existingGameGenres;
+            }
+
+            //delete unselected genres
+            videoGame.VideoGame_Genres = videoGame.VideoGame_Genres.Where(x => !toRemove.Contains(x.GameGenreId.ToString())).ToList();
+
+            //add new genres
+            if (toAdd.Count > 0)
+            {
                 foreach (var item in toAdd)
                 {
                     videoGame.VideoGame_Genres.Add(new VideoGame_Genre()
@@ -129,39 +191,8 @@ namespace VideoGames.WebApi.Controllers
                         VideoGameId = videoGame.Id
                     });
                 }
-                _unitOfWork.Save();
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
             }
         }
 
-        // GET: VideoGameController/Delete/5
-        public ActionResult Delete(Guid id)
-        {
-            var videoGame = _unitOfWork.VideoGame.GetById(id);
-            var vm = _mapper.Map<VideoGameViewModel>(videoGame);
-            return View(vm);
-        }
-
-        // POST: VideoGameController/Delete/5
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public ActionResult Delete(VideoGameViewModel vm)
-        {
-            try
-            {
-                var videoGame = _mapper.Map<VideoGame>(vm);
-                _unitOfWork.VideoGame.Delete(videoGame);
-                _unitOfWork.Save();
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
-        }
     }
 }

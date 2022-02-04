@@ -7,6 +7,6 @@ namespace VideoGames.Domain
     {
         public Guid Id { get; set; }
         public string Title { get; set; }
-        public ICollection<VideoGame_Genre> VideoGame_Genres { get; set; } = new HashSet<VideoGame_Genre>();
+        public List<VideoGame_Genre> VideoGame_Genres { get; set; }
     }
 }
